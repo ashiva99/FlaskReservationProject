@@ -16,7 +16,17 @@
         left: 50%;
         transform: translate(-50%, -50%);
     }
+    p {
+        text-align: center;
+    }
 </style>
+{% if 'username' in session %}
+<p>Welcome {{username}}!</p>           
+{% endif %}
+
+{% if logout == True %}
+<p>Logout Success</p>           
+{% endif %}
 
 <h1>Hello, Welcome to UB reservation!</h1>
 
