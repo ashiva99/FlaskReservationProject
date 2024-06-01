@@ -54,6 +54,8 @@
                 <th>Start Time</th>
                 <th>Customer Note</th>
                 <th>Status</th>
+                <th>CheckIn Time</th>
+                <th>CheckOut Time</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -67,6 +69,8 @@
                 <td>{{ reservation[4] }}</td>
                 <td>{{ reservation[6] }}</td>
                 <td>{{ reservation[5] }}</td>
+                <td>{{ reservation[7] }}</td>
+                <td>{{ reservation[8] }}</td>
                 <td class="button-container">
                     {% if  not (reservation[5]=='Confirmed' or reservation[5]=='Completed' or reservation[5]=='Checked-In') %}
                     <form action="/reservations" method="post">

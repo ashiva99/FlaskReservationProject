@@ -2,10 +2,19 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from datetime import date
 from flask_mysqldb import MySQL
 import yaml
+import os
 
 app = Flask(__name__)
 app.secret_key = "super secret key"
 userID = None
+
+
+'''
+app.config['MYSQL_HOST']= os.environ.get('CLOUD_SQL_CONNECTION_NAME')
+app.config['MYSQL_USER']= 'root'  #os.environ.get('CLOUD_SQL_USERNAME')
+app.config['MYSQL_PASSWORD']= '' #os.environ.get('CLOUD_SQL_PASSWORD')
+app.config['MYSQL_DB']= 'ubreservation' #os.environ.get('CLOUD_SQL_DATABASE_NAME')
+'''
 
 with open('db.yaml', 'r') as f:
     db = yaml.safe_load(f)
@@ -14,6 +23,7 @@ app.config['MYSQL_HOST']= db['mysql_host']
 app.config['MYSQL_USER']= db['mysql_user']
 app.config['MYSQL_PASSWORD']= db['mysql_password']
 app.config['MYSQL_DB']= db['mysql_db']
+
 
 mysql = MySQL(app)
 
@@ -58,7 +68,7 @@ def signup():
     mysql.connection.commit()
     userID = cur.lastrowid
     cur.close()
-    print(str(userID) + "this is the user id that we got ok")
+    print(str(userID) + " this is the user id that we got ok")
 
     # Redirect to a success page or another route
     if userType == 'Admin':
@@ -207,6 +217,16 @@ def create_reservation():
     equipment = request.form['equipment']
     notes = request.form['notes']
 
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        select date, description, type, observance from holiday where Date=%s 
+        """, (start_date,))
+    holiday = cur.fetchone()
+    cur.close()
+    if holiday:
+        return render_template('holiday.html', holidays=holiday)
+
     # Insert reservation into database
     cur = mysql.connection.cursor()
     cur.execute("""
@@ -255,7 +275,9 @@ def my_reservations():
 def reservations():
     if session['userType'] == 'Admin' and request.method== 'GET':
         cur = mysql.connection.cursor()
-        cur.execute("SELECT A.ReservationID, B.Username, B.Email as User_Email, A.Date, A.StartTime, A.Status, A.Notes FROM Reservation A inner join user B on A.UserID = B.UserID")
+        cur.execute("""SELECT A.ReservationID, B.Username, B.Email as User_Email, A.Date, A.StartTime, A.Status, A.Notes, 
+                    IF(C.CheckInTime is NULL, 'NA',C.CheckInTime) as CheckInTime , IF(C.CheckOutTime is NULL, 'NA',C.CheckOutTime) as CheckOutTime 
+                    FROM Reservation A inner join user B on A.UserID = B.UserID left outer join Attendance C on A.ReservationID = C.ReservationID""")
         reservations = cur.fetchall()
         cur.close()
         return render_template('reservations.html', reservations=reservations)
@@ -285,4 +307,4 @@ def feedback():
     return render_template('feedback.html', feedbacks=feedbacks)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='127.0.0.1', port=8080,debug=True)
